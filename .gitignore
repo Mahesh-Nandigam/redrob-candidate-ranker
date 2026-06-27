@@ -1,0 +1,11 @@
+# Datasets and Outputs
+*.jsonl
+*.parquet
+*.faiss
+*.csv
+data/
+test_data/
+
+# Python
+__pycache__/
+*.pyc

@@ -1,10 +1,10 @@
 import os
-import gzip
 import json
 import pandas as pd
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
+import argparse
 
 # 1. Load Embedding Model
 model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -89,20 +89,26 @@ def extract_dense_text(cand):
     return f"{headline} {summary} Skills: {skills_list} History: {jobs_text}"
 
 if __name__ == "__main__":
-    # 3. Stream and process candidates
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_dir", type=str, default="./data", help="Directory containing candidates.jsonl")
+    args = parser.parse_args()
+
     candidates_metadata = []
     texts_to_embed = []
     
-    # Path to your challenge data here
-    data_path = "candidates.jsonl.gz" 
+    # Use the passed data_dir
+    data_path = os.path.join(args.data_dir, "candidates.jsonl")
     
     if not os.path.exists(data_path):
-        print(f"ERROR: Could not find {data_path}. Please place it in this directory to run precompute.")
+        print(f"ERROR: Could not find {data_path}.")
+        print(f"Please ensure the organizer's dataset is placed at {data_path}")
         exit(1)
         
-    print(f"Reading {data_path}...")
-    with gzip.open(data_path, "rt", encoding="utf-8") as f:
-        for line in f:
+    print(f"Reading dataset from {data_path}...")
+    with open(data_path, "rt", encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if not line.strip():
+                continue
             cand = json.loads(line)
             cid = cand["candidate_id"]
             
@@ -130,7 +136,7 @@ if __name__ == "__main__":
             texts_to_embed.append(extract_dense_text(cand))
 
     # 4. Generate Embeddings and Save FAISS Index
-    print("Generating embeddings (this may take a few minutes depending on dataset size)...")
+    print(f"Generating embeddings for {len(texts_to_embed)} candidates (this may take a few minutes)...")
     embeddings = model.encode(texts_to_embed, show_progress_bar=True, batch_size=256)
     embeddings = np.array(embeddings).astype("float32")
 
