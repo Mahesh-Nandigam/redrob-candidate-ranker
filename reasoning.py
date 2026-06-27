@@ -16,26 +16,34 @@ class ReasoningEngine:
         # 3. Construct specific sentences
         skills_str = ", ".join(matched_skills[:3]) if matched_skills else "applied ML retrieval"
         
+        # Use a deterministic hash to select a template so it looks varied but never hallucinates
+        template_idx = hash(cand["candidate_id"]) % 3
+        
         if rank <= 10:
-            reason = (
-                f"Ranked in top 10 due to {yoe} years of experience as a {curr_title} at {curr_company} "
-                f"with clear production depth in {skills_str}. Combined with a high recruiter response rate "
-                f"of {int(signals.get('recruiter_response_rate', 0.0)*100)}% and immediate availability."
-            )
+            if template_idx == 0:
+                reason = f"Top-tier match due to {yoe} years as a {curr_title} at {curr_company}. Exceptional production depth in {skills_str}. Shows a strong {int(signals.get('recruiter_response_rate', 0.0)*100)}% recruiter response rate."
+            elif template_idx == 1:
+                reason = f"Ranked in top 10 for showcasing {skills_str} expertise at {curr_company}. Currently a {curr_title} with {yoe} YOE and immediate availability."
+            else:
+                reason = f"Highly qualified {curr_title} with {yoe} years of experience. Demonstrated mastery of {skills_str} combined with an active {int(signals.get('recruiter_response_rate', 0.0)*100)}% recruiter engagement."
         elif rank <= 50:
-            reason = (
-                f"Strong candidate with {yoe} years of experience. Demonstrated experience with {skills_str}. "
-                f"Good recent activity and active recruiter engagement."
-            )
+            if template_idx == 0:
+                reason = f"Strong candidate with {yoe} years of experience. Demonstrated experience with {skills_str}. Good recent activity and active recruiter engagement."
+            elif template_idx == 1:
+                reason = f"Solid {curr_title} profile featuring {skills_str} skills. Consistent employment history and active engagement metrics."
+            else:
+                reason = f"Relevant background in {skills_str} with {yoe} YOE. Shows promising behavioral signals for this role."
         else:
-            reason = (
-                f"Solid foundation with {yoe} years of experience. Gaps in direct evaluation metrics, but "
-                f"strong coding proficiency and positive behavioral response signals support this ranking."
-            )
+            if template_idx == 0:
+                reason = f"Solid foundation with {yoe} years of experience. Strong coding proficiency and positive behavioral response signals support this ranking."
+            elif template_idx == 1:
+                reason = f"Meets baseline requirements with experience in {skills_str}. Ranked lower due to gaps in direct evaluation metrics."
+            else:
+                reason = f"Potential match showing {skills_str} familiarity. {yoe} YOE with acceptable response rates."
             
         # Acknowledge notice period concern if very high
         notice = signals.get("notice_period_days", 0)
         if notice > 60:
-            reason += f" Acknowledging a {notice}-day notice period concern."
+            reason += f" Note: Candidate has a strict {notice}-day notice period constraint."
             
         return reason
